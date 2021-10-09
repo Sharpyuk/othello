@@ -1,0 +1,2 @@
+# othello
+Golang Othello game
