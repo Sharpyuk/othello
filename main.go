@@ -41,18 +41,14 @@ func run() {
 
 	drawBoard := drawBoard()
 	grid := drawGrid()
+	currentPlayer := drawCurrentPlayer()
 
-	//circle := drawCircle(4, 4, colornames.Black)
-	//circle2 := drawCircle(4, 5, colornames.White)
-
-	// ... later in the code
 	for !win.Closed() {
-		// ...
 		win.Clear(colornames.Skyblue)
 		drawBoard.Draw(win)
 		grid.Draw(win)
-		//circle.Draw(win)
-		//circle2.Draw(win)
+		currentPlayer.Draw(win)
+
 		refreshBoard(win)
 
 		if win.JustPressed(pixelgl.MouseButtonLeft) {
@@ -66,18 +62,8 @@ func run() {
 				flipAffectedSquares(affected)
 				board[x-1][y-1] = player
 
-				// Check if next player can move
-				nextPlayer := ""
-				switch player {
-				case "B":
-					nextPlayer = "W"
-				case "W":
-					nextPlayer = "B"
-				}
-				valid := validMoves(nextPlayer)
-				if len(valid) > 0 {
-					player = nextPlayer
-				}
+				player = updatePlayer(player)
+				currentPlayer = drawCurrentPlayer()
 			}
 
 		}
@@ -138,7 +124,7 @@ chkLeft:
 	// Check Right
 	affected = []affectedSquares{}
 chkRight:
-	for rowIndex := x - 1; rowIndex > 0; rowIndex-- {
+	for rowIndex := x - 1; rowIndex > -1; rowIndex-- {
 		fmt.Printf("Checking Right X: %d, Y: %d = %s (p: %s)\n", x, y, board[rowIndex][y], p)
 		switch board[rowIndex][y] {
 		case " ":
@@ -170,7 +156,7 @@ chkUp:
 	// Check Dowm
 	affected = []affectedSquares{}
 chkDown:
-	for colIndex := y - 1; colIndex > 0; colIndex-- {
+	for colIndex := y - 1; colIndex > -1; colIndex-- {
 		fmt.Printf("Checking Down X: %d, Y: %d = %s (p: %s)\n", x, y, board[x][colIndex], p)
 		switch board[x][colIndex] {
 		case " ":
@@ -272,11 +258,19 @@ DiagDownRight:
 }
 
 func updatePlayer(p string) string {
-	if p == "B" {
-		return "W"
-	} else {
-		return "B"
+	// Check if next player can move
+	nextPlayer := ""
+	switch p {
+	case "B":
+		nextPlayer = "W"
+	case "W":
+		nextPlayer = "B"
 	}
+	valid := validMoves(nextPlayer)
+	if len(valid) > 0 {
+		p = nextPlayer
+	}
+	return p
 }
 
 func getClickedBox(vect pixel.Vec) (int, int) {
@@ -336,6 +330,19 @@ func drawCircle(x, y float64, c color.Color) *imdraw.IMDraw {
 	circle.Push(pixel.V((x*75)+12, (y*75)+12))
 	circle.Circle(30, 0)
 	return circle
+}
+
+func drawCurrentPlayer() *imdraw.IMDraw {
+	playerColor := colornames.White
+	if player == "B" {
+		playerColor = colornames.Black
+	}
+	currentPlayer := imdraw.New(nil)
+	currentPlayer.Color = playerColor
+	currentPlayer.Push(pixel.V(750, 700))
+	currentPlayer.Circle(30, 0)
+
+	return currentPlayer
 }
 
 func boardSetup() {
