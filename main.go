@@ -214,8 +214,8 @@ DiagDownLeft:
 	// Check DiagUpLeft
 	affected = []affectedSquares{}
 
-	colIndex = y + 1
-	rowIndex = x - 1
+	colIndex = y
+	rowIndex = x
 DiagUpLeft:
 	for colIndex < 7 && rowIndex > 0 {
 		colIndex++
