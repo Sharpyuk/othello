@@ -7,11 +7,14 @@ import (
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
+	"github.com/faiface/pixel/text"
 	"golang.org/x/image/colornames"
+	"golang.org/x/image/font/basicfont"
 )
 
 var board [8][8]string
 var player string = "B"
+var allValidMoves = []affectedSquares{}
 
 type affectedSquares struct {
 	X, Y int
@@ -41,15 +44,24 @@ func run() {
 
 	drawBoard := drawBoard()
 	grid := drawGrid()
-	currentPlayer := drawCurrentPlayer()
+	currentPlayerText, currentPlayer := drawCurrentPlayer()
+	currentPlayerText.Draw(win, pixel.IM.Scaled(currentPlayerText.Orig, 4))
+	currentPlayer.Draw(win)
 
 	for !win.Closed() {
-		win.Clear(colornames.Skyblue)
+		win.Clear(colornames.Navy)
 		drawBoard.Draw(win)
 		grid.Draw(win)
+		drawAvailableMoves(allValidMoves, win)
+
+		currentPlayerText, currentPlayer := drawCurrentPlayer()
+		currentPlayerText.Draw(win, pixel.IM.Scaled(currentPlayerText.Orig, 4))
 		currentPlayer.Draw(win)
 
 		refreshBoard(win)
+		blackPlayerScore, whitePlayerScore := updateScores()
+		blackPlayerScore.Draw(win, pixel.IM.Scaled(blackPlayerScore.Orig, 4))
+		whitePlayerScore.Draw(win, pixel.IM.Scaled(whitePlayerScore.Orig, 4))
 
 		if win.JustPressed(pixelgl.MouseButtonLeft) {
 			// Which square was clicked on?
@@ -63,7 +75,9 @@ func run() {
 				board[x-1][y-1] = player
 
 				player = updatePlayer(player)
-				currentPlayer = drawCurrentPlayer()
+				currentPlayerText, currentPlayer = drawCurrentPlayer()
+
+				allValidMoves = validMoves(player)
 			}
 
 		}
@@ -80,7 +94,8 @@ func validMoves(p string) []affectedSquares {
 			if board[x][y] == " " {
 				chkSquare := findAffectedSquares(p, x, y)
 				if len(chkSquare) > 0 {
-					possibleMoves = append(possibleMoves, chkSquare...)
+					//possibleMoves = append(possibleMoves, chkSquare...)
+					possibleMoves = append(possibleMoves, affectedSquares{X: x, Y: y})
 				}
 			}
 		}
@@ -302,13 +317,50 @@ func refreshBoard(win *pixelgl.Window) {
 	}
 }
 
+func updateScores() (*text.Text, *text.Text) {
+
+	var black, white int
+	for x := 0; x < 7; x++ {
+		for y := 0; y < 7; y++ {
+			switch board[x][y] {
+			case "B":
+				black++
+			case "W":
+				white++
+			}
+		}
+	}
+
+	basicAtlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
+	basicTxt := text.New(pixel.V(700, 300), basicAtlas)
+
+	fmt.Fprintf(basicTxt, "WHITE: %d", white)
+
+	basicAtlas2 := text.NewAtlas(basicfont.Face7x13, text.ASCII)
+	basicTxt2 := text.New(pixel.V(700, 200), basicAtlas2)
+
+	fmt.Fprintf(basicTxt2, "BLACK: %d", black)
+	return basicTxt, basicTxt2
+
+}
+
 func drawBoard() *imdraw.IMDraw {
 	board := imdraw.New(nil)
-	board.Color = colornames.Lightgreen
+	board.Color = colornames.Darkgreen
 	board.Push(pixel.V(50, 50))
 	board.Push(pixel.V(650, 650))
 	board.Rectangle(0)
 	return board
+}
+
+func drawAvailableMoves(a []affectedSquares, w *pixelgl.Window) {
+	for _, av := range a {
+		circle := imdraw.New(nil)
+		circle.Color = colornames.Gray
+		circle.Push(pixel.V(((float64(av.X)+1)*75)+12, ((float64(av.Y)+1)*75)+12))
+		circle.Circle(30, 5)
+		circle.Draw(w)
+	}
 }
 
 func drawGrid() *imdraw.IMDraw {
@@ -332,17 +384,23 @@ func drawCircle(x, y float64, c color.Color) *imdraw.IMDraw {
 	return circle
 }
 
-func drawCurrentPlayer() *imdraw.IMDraw {
+func drawCurrentPlayer() (*text.Text, *imdraw.IMDraw) {
 	playerColor := colornames.White
 	if player == "B" {
 		playerColor = colornames.Black
 	}
+
+	basicAtlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
+	basicTxt := text.New(pixel.V(700, 700), basicAtlas)
+
+	fmt.Fprintf(basicTxt, "Player:")
+
 	currentPlayer := imdraw.New(nil)
 	currentPlayer.Color = playerColor
-	currentPlayer.Push(pixel.V(750, 700))
+	currentPlayer.Push(pixel.V(950, 720))
 	currentPlayer.Circle(30, 0)
 
-	return currentPlayer
+	return basicTxt, currentPlayer
 }
 
 func boardSetup() {
