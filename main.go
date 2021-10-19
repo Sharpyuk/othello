@@ -73,6 +73,12 @@ func run() {
 			affected := findAffectedSquares(player, x-1, y-1)
 			if len(affected) > 0 {
 
+				// Update board to remove possible move grey squares
+				drawBoard.Draw(win)
+				grid.Draw(win)
+				refreshBoard(win)
+				win.Update()
+
 				drawFlipAnimation(float64(x-1), float64(y-1), player, win)
 				board[x-1][y-1] = player
 				flipAffectedSquares(affected, win)
@@ -82,10 +88,10 @@ func run() {
 
 				allValidMoves = validMoves(player)
 
-				if player == "W" {
+				for player == "W" {
 					time.Sleep(1 * time.Second)
 					playComputerMove(allValidMoves, win)
-					player = "B"
+					player = updatePlayer(player)
 				}
 
 				allValidMoves = validMoves(player)
@@ -428,7 +434,7 @@ func drawFlipAnimation(x, y float64, c string, win *pixelgl.Window) {
 	circleArc := imdraw.New(nil)
 	circleArc.Color = playerColor
 	for i := 0.0; i < 9.0; i++ {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(30 * time.Millisecond)
 		circleArc.Push(pixel.V((x*75)+12, (y*75)+12))
 		circleArc.CircleArc(30, 0, i*math.Pi, 0)
 		circleArc.Draw(win)
