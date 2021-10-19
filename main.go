@@ -86,21 +86,51 @@ func run() {
 				player = updatePlayer(player)
 				//currentPlayerText, currentPlayer = drawCurrentPlayer()
 
-				allValidMoves = validMoves(player)
-
 				for player == "W" {
+					allValidMoves = validMoves(player)
+					if len(allValidMoves) == 0 {
+						player = updatePlayer(player)
+						break
+					}
 					time.Sleep(1 * time.Second)
 					playComputerMove(allValidMoves, win)
 					player = updatePlayer(player)
 				}
 
 				allValidMoves = validMoves(player)
+				if len(allValidMoves) == 0 {
+					player = updatePlayer(player)
+					if len(validMoves(player)) == 0 {
+						gameOver(win)
+					}
+				}
 			}
 
 		}
 
 		win.Update()
 		// ...
+	}
+}
+
+func gameOver(win *pixelgl.Window) {
+	fmt.Println("Game Over!")
+	var w, b int
+	for x := 0; x < 7; x++ {
+		for y := 0; y < 7; y++ {
+			switch board[x][y] {
+			case "W":
+				w++
+			case "B":
+				b++
+			}
+		}
+	}
+	fmt.Println("White: %d, Black: %d", w, b)
+	if w > b {
+		fmt.Println("White Wins..")
+	} else {
+		fmt.Println("Black Wins!  Well done!!")
 	}
 }
 
