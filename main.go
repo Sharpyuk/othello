@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"math"
+	"time"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
@@ -71,11 +73,20 @@ func run() {
 			affected := findAffectedSquares(player, x-1, y-1)
 			if len(affected) > 0 {
 
-				flipAffectedSquares(affected)
+				drawFlipAnimation(float64(x-1), float64(y-1), player, win)
 				board[x-1][y-1] = player
+				flipAffectedSquares(affected, win)
 
 				player = updatePlayer(player)
-				currentPlayerText, currentPlayer = drawCurrentPlayer()
+				//currentPlayerText, currentPlayer = drawCurrentPlayer()
+
+				allValidMoves = validMoves(player)
+
+				if player == "W" {
+					time.Sleep(1 * time.Second)
+					playComputerMove(allValidMoves, win)
+					player = "B"
+				}
 
 				allValidMoves = validMoves(player)
 			}
@@ -87,6 +98,32 @@ func run() {
 	}
 }
 
+func playComputerMove(possibleMoves []affectedSquares, win *pixelgl.Window) {
+	var foundMove affectedSquares
+	var maxAffectedSquares int
+	for _, p := range possibleMoves {
+		fmt.Println("-Playing Computer Move")
+		fmt.Printf(" --Checking X:%d  Y:%d\n", p.X, p.Y)
+		a := findAffectedSquares("W", p.X, p.Y)
+
+		if len(a) > maxAffectedSquares {
+			fmt.Printf("  ---Highest: %d", len(a))
+			foundMove.X = p.X
+			foundMove.Y = p.Y
+			maxAffectedSquares = len(a)
+		}
+	}
+
+	affected := findAffectedSquares(player, foundMove.X, foundMove.Y)
+
+	drawFlipAnimation(float64(foundMove.X), float64(foundMove.Y), player, win)
+	board[foundMove.X][foundMove.Y] = "W"
+
+	flipAffectedSquares(affected, win)
+
+	fmt.Printf("Computer Move: %d, %d\n", foundMove.X, foundMove.Y)
+}
+
 func validMoves(p string) []affectedSquares {
 	possibleMoves := []affectedSquares{}
 	for x := 0; x < 8; x++ {
@@ -95,7 +132,9 @@ func validMoves(p string) []affectedSquares {
 				chkSquare := findAffectedSquares(p, x, y)
 				if len(chkSquare) > 0 {
 					//possibleMoves = append(possibleMoves, chkSquare...)
+
 					possibleMoves = append(possibleMoves, affectedSquares{X: x, Y: y})
+
 				}
 			}
 		}
@@ -103,14 +142,17 @@ func validMoves(p string) []affectedSquares {
 	return possibleMoves
 }
 
-func flipAffectedSquares(affected []affectedSquares) {
+func flipAffectedSquares(affected []affectedSquares, win *pixelgl.Window) {
 	for _, square := range affected {
 		switch board[square.X][square.Y] {
 		case "B":
 			board[square.X][square.Y] = "W"
+
 		case "W":
 			board[square.X][square.Y] = "B"
 		}
+
+		drawFlipAnimation(float64(square.X), float64(square.Y), board[square.X][square.Y], win)
 
 	}
 }
@@ -374,6 +416,24 @@ func drawGrid() *imdraw.IMDraw {
 		}
 	}
 	return grid
+}
+
+func drawFlipAnimation(x, y float64, c string, win *pixelgl.Window) {
+	x += 1
+	y += 1
+	playerColor := colornames.White
+	if player == "B" {
+		playerColor = colornames.Black
+	}
+	circleArc := imdraw.New(nil)
+	circleArc.Color = playerColor
+	for i := 0.0; i < 9.0; i++ {
+		time.Sleep(100 * time.Millisecond)
+		circleArc.Push(pixel.V((x*75)+12, (y*75)+12))
+		circleArc.CircleArc(30, 0, i*math.Pi, 0)
+		circleArc.Draw(win)
+		win.Update()
+	}
 }
 
 func drawCircle(x, y float64, c color.Color) *imdraw.IMDraw {
